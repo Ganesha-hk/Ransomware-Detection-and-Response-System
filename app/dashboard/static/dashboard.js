@@ -1,5 +1,6 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
+let signedIn = null;
 const state = {
   page: "overview",
   selected: null,
@@ -53,7 +54,7 @@ async function api(url, options) {
     }
     throw Error(
       response.status === 401
-        ? "Enter your local admin token in Setup & test to perform this action."
+        ? (signedIn?.mode === "google" ? "Your session has expired. Sign in again at /login." : "Enter your local admin token in Setup & test to perform this action.")
         : response.status === 409
           ? "The state changed. Refresh and try again."
           : typeof detail === "string"
@@ -69,6 +70,7 @@ async function mutate(url, body) {
     headers: {
       "Content-Type": "application/json",
       Authorization: "Bearer " + $("token").value,
+      "X-CSRF-Token": signedIn?.user?.csrf || "",
     },
     body: JSON.stringify(body),
   });
@@ -649,3 +651,15 @@ $("createSelectedReports").onclick = guarded(async () => {
     renderReports("selectedReports", result.reports);
   } finally { $("createSelectedReports").disabled = false; }
 });
+
+api("/auth/me").then((account) => {
+  signedIn = account;
+  if (account.mode === "google" && account.user) {
+    $("accountName").textContent = account.user.email;
+    $("signOut").hidden = false;
+    $("signOut").onclick = guarded(async () => {
+      await mutate("/auth/logout", {});
+      location.assign("/login");
+    });
+  }
+}).catch(() => {});

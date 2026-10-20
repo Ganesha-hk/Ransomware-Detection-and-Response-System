@@ -2,7 +2,7 @@ import os
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, Header, Depends, Query
+from fastapi import FastAPI, HTTPException, Header, Depends, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -11,6 +11,8 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from app.services.runtime import Runtime
 from app.services.settings_service import update
 from app.api.schemas import ReportRequest, ReportSelection, ScanRequest, SettingsRequest
+
+from app.api.auth import configure_auth, require_session_write
 
 ASSETS = Path(__file__).resolve().parents[1] / "dashboard"
 
@@ -28,15 +30,19 @@ def create_app(config_path=None, watch=None):
             await run_in_threadpool(runtime.stop)
 
     app = FastAPI(title="RDRS educational detector", lifespan=lifespan)
+    hostname = configure_auth(app, ASSETS)
     app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "testserver", "[::1]"]
+        TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "testserver", "[::1]", hostname]
     )
     app.mount("/static", StaticFiles(directory=ASSETS / "static"), name="static")
 
     def runtime():
         return app.state.runtime
 
-    def authorize(authorization: str | None = Header(default=None)):
+    def authorize(request: Request, authorization: str | None = Header(default=None)):
+        if app.state.auth_mode == "google":
+            require_session_write(request, admin=request.url.path in ("/settings", "/scan"))
+            return
         token = app.state.token
         if not token or not secrets.compare_digest(authorization or "", "Bearer " + token):
             raise HTTPException(401, "A local admin token is required")

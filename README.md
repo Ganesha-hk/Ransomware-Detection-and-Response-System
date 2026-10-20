@@ -1,7 +1,3 @@
-> **Reviewer files:** [Project report](submission/PROJECT_REPORT.docx), [report source](submission/PROJECT_REPORT.md), and [three matching sample reports](submission/sample-reports/). Latest verification: 58 tests passed, 95.16% statement coverage.
-
-> **Submission package:** Start with [the demonstration and artifact index](docs/SUBMISSION_INDEX.md). It links the current screenshots, final reports, integrity checks, test results and reflection.
-
 # RDRS — Ransomware Detection and Response System
 
 A local, rules-based educational detector with real filesystem observation, explainable scores, persistent incidents, copy-only evidence, a live dashboard, and JSON/CSV reports. It does not identify an attacker's process, prevent ransomware, or restore files.

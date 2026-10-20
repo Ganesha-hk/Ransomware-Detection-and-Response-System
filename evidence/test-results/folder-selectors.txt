@@ -1,2 +1,0 @@
-PASS: navigation, persistent peak, monitored scope, incident tables, filename escaping, event rendering, authenticated scan, token clearing, and stale-data errors.
-Verified dynamic 1→6 roots, selection preservation and removal fallback.

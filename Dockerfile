@@ -1,8 +1,9 @@
 FROM python:3.12-slim
 WORKDIR /app
-COPY requirements.txt requirements-dev.txt ./
-RUN pip install --no-cache-dir -r requirements-dev.txt && useradd --create-home --uid 10001 rdrs && mkdir -p /runtime && chown rdrs:rdrs /runtime /app
-COPY --chown=rdrs:rdrs . .
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt && useradd --create-home --uid 10001 rdrs && mkdir -p /runtime && chown rdrs:rdrs /runtime /app
+COPY --chown=rdrs:rdrs app ./app
+COPY --chown=rdrs:rdrs config.docker.yaml ./config.docker.yaml
 USER rdrs
 ENV RDRS_CONFIG=/app/config.docker.yaml PYTHONUNBUFFERED=1
 EXPOSE 8000

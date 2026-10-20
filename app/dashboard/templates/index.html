@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>RDRS · Security workspace</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="/static/dashboard.js?v=report-selection-1" defer></script>
+  </head>
+  <body>
+    <aside>
+      <div class="brand">
+        <span class="logo">R</span>
+        <div><b>RDRS</b><small>Security workspace</small></div>
+      </div>
+      <nav aria-label="Main navigation">
+        <button data-page="overview" class="nav active">Overview</button
+        ><button data-page="incidents" class="nav">
+          Incidents <span id="incidentCount">0</span></button
+        ><button data-page="activity" class="nav">File activity</button
+        ><button data-page="reports" class="nav">Reports</button
+        ><button data-page="setup" class="nav">Setup & test</button>
+      </nav>
+      <div class="aside-note">
+        <span class="dot"></span> Local educational detector
+        <p>Live observation.<br />Copy-only response.</p>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header>
+        <span id="pageTitle">Overview</span>
+        <div>
+          <span id="connection">Connecting…</span
+          ><span class="badge">LIVE MONITOR · SIMULATION MODE</span>
+        </div>
+      </header>
+      <main>
+        <div id="error" role="alert" hidden></div>
+        <div id="notice" role="status" hidden></div>
+        <section id="page-overview" class="page">
+          <div class="heading">
+            <div>
+              <p class="eyebrow">YOUR MONITORED WORKSPACE</p>
+              <h1>Know what changed.</h1>
+              <p class="muted">
+                Observe activity, investigate signals, preserve evidence.
+              </p>
+            </div>
+            <button data-go="setup">Configure & test →</button>
+          </div>
+          <div class="overview-grid">
+            <article class="score-card">
+              <p class="eyebrow">CURRENT ACTIVITY SCORE</p>
+              <div>
+                <strong id="score">—</strong><span class="outof"> / 100</span>
+              </div>
+              <span id="severity" class="pill">Waiting for telemetry</span>
+              <div class="meter"><div id="fill"></div></div>
+              <p id="scoreExplanation" class="muted">
+                Loading monitoring scope…
+              </p>
+            </article>
+            <article>
+              <p class="eyebrow">MONITOR STATUS</p>
+              <h2 id="monitor">Connecting</h2>
+              <dl id="health"></dl>
+            </article>
+            <article>
+              <p class="eyebrow">LATEST INCIDENT</p>
+              <div id="latestIncident" class="empty">
+                No incident history loaded.
+              </div>
+            </article>
+          </div>
+          <article class="scope">
+            <div>
+              <h2>Sensitive folder monitoring</h2>
+              <div id="watchRoots"></div>
+            </div>
+            <p class="muted">
+              Only these folders are monitored. A Normal score does not certify
+              that the VM is clean. Past incidents remain available after the
+              live score decays.
+            </p>
+          </article>
+          <article><h2>Folder-by-folder activity</h2><p class="muted">Independent detection windows and incidents for each department. These are local demonstration folders, not connected business systems.</p><div id="folderScores"></div></article>
+          <div class="columns">
+            <article>
+              <h2>Why this score?</h2>
+              <div id="signals"></div>
+            </article>
+            <article>
+              <h2>Recent alert transitions</h2>
+              <div id="alerts"></div>
+            </article>
+          </div>
+          <div class="columns">
+            <article>
+              <h2>
+                File entropy <small>bits per byte · latest observations</small>
+              </h2>
+              <svg
+                id="entropyChart"
+                viewBox="0 0 600 110"
+                role="img"
+                aria-label="Observed file entropy over time"
+              ></svg>
+              <p class="muted">
+                High entropy can also mean compressed or random content.
+              </p>
+            </article>
+            <article>
+              <h2>Visible process CPU <small>summed percentage</small></h2>
+              <svg
+                id="cpuChart"
+                viewBox="0 0 600 110"
+                role="img"
+                aria-label="Visible process CPU over time"
+              ></svg>
+              <p class="muted">
+                Context only. Process snapshots do not identify the file writer.
+              </p>
+            </article>
+          </div>
+        </section>
+        <section id="page-incidents" class="page" hidden>
+          <div class="heading">
+            <div>
+              <p class="eyebrow">PERSISTENT HISTORY</p>
+              <h1>Incident investigation</h1>
+              <p class="muted">
+                Historical peaks remain here when live activity returns to
+                Normal.
+              </p>
+            </div>
+            <button id="olderIncidents">Load more</button>
+          </div>
+          <div class="investigation">
+            <article>
+              <h2>Recorded incidents</h2>
+              <div id="incidents"></div>
+            </article>
+            <article id="detailPanel">
+              <div id="details" class="empty">
+                Select an incident to see the affected files, detection reasons
+                and evidence.
+              </div>
+            </article>
+          </div>
+        </section>
+        <section id="page-activity" class="page" hidden>
+          <div class="heading">
+            <div>
+              <p class="eyebrow">ACTUAL FILESYSTEM OBSERVATIONS</p>
+              <h1>File activity</h1>
+              <p class="muted">
+                Inventory observations are labeled separately from live changes.
+              </p>
+            </div>
+          </div>
+          <article>
+            <div class="toolbar">
+              <label
+                >Event
+                <select id="eventType">
+                  <option value="">All events</option>
+                  <option value="created">Created</option>
+                  <option value="modified">Modified</option>
+                  <option value="moved">Renamed / moved</option>
+                  <option value="deleted">Deleted</option>
+                  <option value="inventory">Inventory</option>
+                </select></label
+              ><label
+                >Folder
+                <select id="eventRoot">
+                  <option value="">All watched folders</option>
+                </select></label
+              ><button id="refreshEvents">Refresh</button
+              ><span id="eventPage" class="muted"></span
+              ><button id="previousEvents">Previous</button
+              ><button id="nextEvents">Next</button>
+            </div>
+            <div class="tablewrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Observed</th>
+                    <th>Change</th>
+                    <th>File</th>
+                    <th>Entropy</th>
+                    <th>Sample</th>
+                    <th>Source</th>
+                  </tr>
+                </thead>
+                <tbody id="events"></tbody>
+              </table>
+            </div>
+            <p id="eventsEmpty" class="empty" hidden>
+              No matching events. Create or edit a file inside a watched folder
+              to see live activity.
+            </p>
+          </article>
+        </section>
+        <section id="page-reports" class="page" hidden>
+          <div class="heading">
+            <div>
+              <p class="eyebrow">RECORDED FACTS & EVIDENCE</p>
+              <h1>Reports</h1>
+              <p class="muted">
+                Assessment reports for review and printing. JSON and CSV for data analysis.
+              </p>
+            </div>
+            <button id="olderReports">Load more</button>
+          </div>
+          <article>
+            <h2>Create a report</h2>
+            <p>Choose the period and formats you need. One report is created per incident with activity in that period.</p>
+            <p>Dates and times use your device's local timezone. The end time is excluded.</p>
+            <div class="toolbar">
+              <label>From date and time <input id="reportStart" type="datetime-local" required></label>
+              <label>To date and time <input id="reportEnd" type="datetime-local" required></label>
+            </div>
+            <fieldset><legend>Report formats</legend>
+              <label><input id="formatHtml" type="checkbox" checked> Readable security assessment — summary for everyone, technical findings and evidence</label><br>
+              <label><input id="formatJson" type="checkbox"> JSON — structured data</label><br>
+              <label><input id="formatCsv" type="checkbox"> CSV — spreadsheet data</label>
+            </fieldset>
+            <p>The assessment uses a security-audit layout. It is an RDRS behavioral report, not a Nessus vulnerability scan.</p>
+            <button id="createSelectedReports">Generate selected reports</button>
+            <p id="reportSelectionMessage" role="status"></p>
+            <div id="selectedReports"></div>
+          </article>
+          <details><summary>Previously generated reports</summary><div id="reports"></div></details>
+        </section>
+        <section id="page-setup" class="page" hidden>
+          <div class="heading">
+            <div>
+              <p class="eyebrow">A REPEATABLE, SAFE WORKFLOW</p>
+              <h1>Setup & test</h1>
+              <p class="muted">
+                Connect a watched folder, inspect its files, then test
+                detection.
+              </p>
+            </div>
+          </div>
+          <div class="columns">
+            <article>
+              <h2>1. Monitoring scope</h2>
+              <p>Configured folders:</p>
+              <div id="setupRoots"></div>
+              <p class="muted">
+                For Docker, the host folder <code>data/sandbox</code> is mounted
+                as <code>/sandbox</code>. The five department folders under
+                <code>data/sensitive-lab</code> are mounted under <code>/sensitive-lab</code>: Finance, Human Resources, Customer Data, Legal and Backups. Other VM folders are outside this monitor.
+              </p>
+              <p>
+                To monitor another folder locally, stop the service and start it
+                with a validated watch path:
+              </p>
+              <pre>
+python -m app.main --config config.yaml --watch /absolute/path/to/folder</pre
+              >
+              <p class="muted">
+                Path changes require a restart. Do not run a second monitor on
+                the same database.
+              </p>
+            </article>
+            <article>
+              <h2>2. Local administrator access</h2>
+              <p>
+                Read views need no login. Scans, report generation and settings
+                changes require your local token.
+              </p>
+              <label
+                >Admin token<input
+                  id="token"
+                  type="password"
+                  autocomplete="off"
+                  placeholder="RDRS_ADMIN_TOKEN from your server environment" /></label
+              ><button id="forgetToken">Clear token</button>
+              <p class="muted">
+                Kept only in this page’s memory. Never saved in browser storage.
+              </p>
+              <h3>Inventory existing files</h3>
+              <label>Approved folder<select id="scanRoot"></select></label
+              ><button id="startScan">Start inventory</button>
+              <p class="muted">
+                Reads current files without modifying them. Inventory does not
+                manufacture an attack or raise the live burst score.
+              </p>
+              <div id="scans"></div>
+            </article>
+          </div>
+          <article>
+            <h2>3. Observe a controlled test</h2>
+            <div class="steps">
+              <div>
+                <b>01 · Ordinary activity</b>
+                <p>Create a few text files and confirm events appear.</p>
+                <pre>python scripts/simulate_activity.py --profile benign</pre>
+              </div>
+              <div>
+                <b>02 · Suspicious pattern</b>
+                <p>
+                  Creates 50 new files, writes random bytes, then renames them
+                  to .locked.
+                </p>
+                <pre>python scripts/simulate_activity.py --profile burst</pre>
+              </div>
+              <div>
+                <b>03 · Investigate</b>
+                <p>
+                  Open Incidents. Inspect the peak, affected files and evidence;
+                  generate both reports.
+                </p>
+                <button data-go="incidents">Open incidents →</button>
+              </div>
+            </div>
+            <p class="muted">
+              Run these commands from the project directory on the host with the
+              virtual environment activated. Each run uses a new exclusive
+              folder and never selects existing user files. Random-content
+              generation is not encryption; a .locked suffix does not prove
+              ransomware. Wait one detection window between independent tests.
+            </p>
+          </article>
+          <article>
+            <h2>Detection thresholds</h2>
+            <p class="muted">
+              Changes are validated and versioned. Incident reports retain the
+              settings used during detection.
+            </p>
+            <form id="settingsForm">
+              <div class="settings-grid">
+                <label
+                  >Warning starts at<input
+                    id="warning"
+                    type="number"
+                    min="1"
+                    max="99"
+                    required /></label
+                ><label
+                  >Critical starts at<input
+                    id="critical"
+                    type="number"
+                    min="2"
+                    max="100"
+                    required /></label
+                ><label
+                  >High entropy threshold<input
+                    id="entropy"
+                    type="number"
+                    min="0"
+                    max="8"
+                    step="0.1"
+                    required /></label
+                ><label
+                  >Refresh interval (seconds)<input
+                    id="pollSeconds"
+                    type="number"
+                    min="0.5"
+                    max="60"
+                    step="0.5"
+                    required
+                /></label>
+              </div>
+              <button type="submit">Save settings</button
+              ><span id="settingsVersion" class="muted"></span>
+            </form>
+          </article>
+        </section>
+        <footer>
+          RDRS · No process termination, host isolation or automatic recovery ·
+          <a href="/docs" target="_blank" rel="noopener">API reference</a>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

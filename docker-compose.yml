@@ -1,0 +1,14 @@
+services:
+  rdrs:
+    build: .
+    ports:
+    - 127.0.0.1:8000:8000
+    environment:
+      RDRS_ADMIN_TOKEN: ${RDRS_ADMIN_TOKEN:-}
+    volumes:
+    - ./data/sandbox:/sandbox:ro
+    - ./data/sensitive-lab:/sensitive-lab:ro
+    - rdrs-runtime:/runtime
+    restart: unless-stopped
+volumes:
+  rdrs-runtime: null

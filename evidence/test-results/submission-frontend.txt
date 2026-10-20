@@ -1,0 +1,1 @@
+PASS: navigation, persistent peak, monitored scope, incident tables, filename escaping, event rendering, authenticated scan, token clearing, and stale-data errors.

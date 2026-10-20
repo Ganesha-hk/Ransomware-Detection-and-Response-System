@@ -1,0 +1,24 @@
+{
+  "csv": {
+    "incident_id": "1b1b6d96-2a87-4632-84d9-64e25067cc41",
+    "format": "csv",
+    "path": "0d0d3190-8da9-4063-8673-4831572cc626.csv",
+    "sha256": "2c5565bc7e68685c66e5da4396c704ed5f88204d55524df7b2a9ae81c924538f",
+    "bytes": 437600,
+    "report_version": 1,
+    "snapshot": false,
+    "id": "fb05ff52-0b62-4bf8-b894-4b5f55032dd4",
+    "timestamp": "2026-10-20T16:44:00.970812+00:00"
+  },
+  "json": {
+    "incident_id": "1b1b6d96-2a87-4632-84d9-64e25067cc41",
+    "format": "json",
+    "path": "01768866-78e6-4801-a339-30fbcda85a8a.json",
+    "sha256": "fe8ed8ba6ff26d1e86bc4a7db61e1d83450d240ab5fe410c5e9072c882ea482c",
+    "bytes": 196673,
+    "report_version": 1,
+    "snapshot": false,
+    "id": "c366678a-4e58-4c20-a64c-738caa9918f4",
+    "timestamp": "2026-10-20T16:44:00.931192+00:00"
+  }
+}

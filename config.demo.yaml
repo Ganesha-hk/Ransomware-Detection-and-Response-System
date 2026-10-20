@@ -1,0 +1,59 @@
+app:
+  host: 127.0.0.1
+  port: 8001
+  simulation_mode: true
+dashboard:
+  poll_interval_seconds: 2
+database:
+  busy_timeout_ms: 5000
+  path: ./data/rdrs.db
+detection:
+  cpu_signal_enabled: false
+  cpu_threshold_percent: 80
+  critical_min: 70
+  entropy_threshold: 7.5
+  extension_change_min_files: 10
+  high_entropy_min_files: 5
+  incident_cooldown_seconds: 60
+  mass_rename_min_files: 20
+  rapid_write_min_files: 20
+  tick_seconds: 1
+  unknown_program_signal_enabled: false
+  warning_min: 40
+  weights:
+    cpu_spike: 15
+    high_entropy: 25
+    mass_rename: 30
+    rapid_high_entropy_writes: 40
+    unknown_program: 10
+  window_seconds: 60
+logging:
+  directory: ./logs
+  retention: 7 days
+  rotation: 10 MB
+monitor:
+  debounce_ms: 100
+  exclude_paths:
+  - ./data/quarantine
+  - ./data/reports
+  - ./logs
+  - ./evidence
+  - ./data/demo-manifests
+  observer: native
+  queue_capacity: 10000
+  recursive: true
+  sample_bytes: 65536
+  sample_retries: 2
+  watch_paths:
+  - ./data/sandbox
+processes:
+  allowlisted_executables: []
+  sample_interval_seconds: 5
+reports:
+  output_dir: ./data/reports
+response:
+  evidence_dir: ./data/quarantine
+  max_file_bytes: 10485760
+  max_files_per_incident: 100
+  max_incident_bytes: 104857600
+  simulate_termination: false

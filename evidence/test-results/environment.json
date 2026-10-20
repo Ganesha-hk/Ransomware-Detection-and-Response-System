@@ -1,0 +1,11 @@
+{
+  "python": "3.14.4",
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "packages": {
+    "fastapi": "0.151.0",
+    "sqlalchemy": "2.1.5",
+    "watchdog": "6.0.0",
+    "psutil": "7.2.2",
+    "pydantic": "2.14.1"
+  }
+}

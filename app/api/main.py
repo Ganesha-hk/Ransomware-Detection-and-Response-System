@@ -1,5 +1,6 @@
 import os
 import secrets
+from datetime import datetime
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Header, Depends, Query, Request
@@ -155,11 +156,11 @@ def create_app(config_path=None, watch=None):
         r = runtime()
         matches = []
         for incident in r.store.rows("incidents", limit=100000):
-            detail = r.reports.detail(incident["id"], body.start, body.end)
-            if detail["event_timeline"]:
+            opened = datetime.fromisoformat(incident["opened_at"])
+            if body.start <= opened < body.end:
                 matches.append(incident["id"])
         if not matches:
-            return {"reports": [], "message": "No recorded incident activity in this period."}
+            return {"reports": [], "message": "No incidents opened in this period."}
         if len(matches) > 100:
             raise HTTPException(422, "Choose a shorter period (maximum 100 incidents).")
         return {"reports": [r.reports.generate(i, f, body.start, body.end)

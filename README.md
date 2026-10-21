@@ -50,7 +50,7 @@ The burst creates 50 new throwaway files in an exclusive sandbox folder, writes 
 - **Overview:** live score, monitored folders, alerts and metrics.
 - **Incidents:** detection reasons, observed files, timeline and evidence copies.
 - **File activity:** live events with folder and event-type filters.
-- **Reports:** select local start/end times and readable HTML, JSON or CSV formats. Only selected formats are generated, one per matching incident. The end time is excluded. HTML supports browser printing.
+- **Reports:** select local start/end times and readable HTML, JSON or CSV formats. Only selected formats are generated, one per incident opened within the selected range. Event, file and evidence lists are restricted to that range; incident lifecycle and historical peak remain labeled context. The end time is excluded. HTML supports browser printing.
 - **Setup & test:** token entry, inventory, detection settings and simulator instructions.
 
 API documentation: http://127.0.0.1:8000/docs.

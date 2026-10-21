@@ -189,6 +189,15 @@ function chart(id, rows, key, max) {
       );
       line.setAttribute("points", points.join(" "));
       svg.append(line);
+      if (points.length === 1) {
+        const [cx, cy] = points[0].split(",");
+        const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        dot.setAttribute("cx", cx);
+        dot.setAttribute("cy", cy);
+        dot.setAttribute("r", "3");
+        dot.setAttribute("fill", "#82e2c1");
+        svg.append(dot);
+      }
       points = [];
     }
   };
@@ -333,7 +342,11 @@ function renderOverview(s, alerts, metrics) {
     .slice()
     .reverse()
     .map((x) => ({ ...x, entropy: x.facts.mean_entropy }));
-  chart("entropyChart", rows, "entropy", 8);
+  const entropy = metrics.entropy_samples || [];
+  chart("entropyChart", entropy, "entropy", 8);
+  $("entropyStatus").textContent = entropy.length
+    ? `Latest sample: ${number(entropy[entropy.length - 1].entropy)} bits/byte · ${time(entropy[entropy.length - 1].timestamp)}. Showing ${entropy.length} measured observations; updates when files are sampled.`
+    : "Waiting for a readable file change in a monitored folder. No entropy has been measured in the latest 200 events; an idle folder has no new sample.";
   chart(
     "cpuChart",
     rows,

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>RDRS · Security workspace</title>
     <link rel="stylesheet" href="/static/styles.css" />
-    <script src="/static/dashboard.js?v=threat-trend-1" defer></script>
+    <script src="/static/dashboard.js?v=entropy-samples-1" defer></script>
   </head>
   <body>
     <div style="position:fixed;bottom:8px;right:16px;z-index:10;background:#101c28;padding:6px;border-radius:8px"><span id="accountName"></span> <button id="signOut" hidden>Sign out</button></div>
@@ -111,8 +111,9 @@
                 role="img"
                 aria-label="Observed file entropy over time"
               ></svg>
+              <p id="entropyStatus" class="muted">Waiting for file measurements.</p>
               <p class="muted">
-                High entropy can also mean compressed or random content.
+                High entropy can also mean compressed or random content. Entropy is not a threat score.
               </p>
             </article>
             <article>

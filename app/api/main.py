@@ -137,6 +137,11 @@ def create_app(config_path=None, watch=None):
                 item["observations"] += 1
         return dict(
             top_files=sorted(top.values(), key=lambda x: x["observations"], reverse=True)[:10],
+            entropy_samples=[
+                {"entropy": e["entropy"], "timestamp": e["timestamp"]}
+                for e in reversed(recent)
+                if e.get("entropy") is not None
+            ],
             scores=r.store.rows("scores", limit),
             processes=r.store.rows("processes", limit),
             cpu_units="psutil process percent; may exceed 100 across cores",

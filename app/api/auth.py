@@ -17,6 +17,23 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from starlette.middleware.sessions import SessionMiddleware
 
 
+def password_policy_error(password, identity):
+    if not 12 <= len(password) <= 128:
+        return "Use 12–128 characters for your password."
+    if not (re.search(r"[A-Z]", password) and re.search(r"[a-z]", password)
+            and re.search(r"[0-9]", password)
+            and any(not c.isalnum() and not c.isspace() for c in password)):
+        return "Include an uppercase letter, a lowercase letter, a number and a symbol."
+    folded = password.casefold()
+    common = ("password", "qwerty", "letmein", "welcome", "changeme", "123456", "abcdef")
+    if any(word in folded for word in common) or len(set(folded)) < 6:
+        return "Avoid common passwords, predictable sequences and repeated characters."
+    account_name = identity.split("@", 1)[0].casefold()
+    if len(account_name) >= 3 and account_name in folded:
+        return "Your password must not contain your username or the name part of your email."
+    return None
+
+
 class Accounts:
     def __init__(self):
         self.sessions = {}
@@ -177,6 +194,9 @@ def configure_auth(app, assets):
         identity = form.get("identity", "").strip().lower()
         password = form.get("password", "")
         signup = request.url.path == "/signup"
+        policy_error = password_policy_error(password, identity) if signup else None
+        if policy_error:
+            return HTMLResponse(env.get_template("login.html").render(signup=True, password_mode=True, csrf=csrf, error=policy_error), status_code=400)
         error = "Use a username (3–64 letters, numbers, dots, underscores or hyphens) or an email address."
         valid = re.fullmatch(r"[a-z0-9_.-]{3,64}", identity) or re.fullmatch(r"[^\s@]{1,64}@[^\s@.]+(?:\.[^\s@.]+)+", identity)
         if valid and len(identity) <= 254 and 10 <= len(password) <= 128:

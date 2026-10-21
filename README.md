@@ -69,7 +69,7 @@ Uses FastAPI, Uvicorn, watchdog, psutil, SQLAlchemy, Pydantic, PyYAML, Loguru an
 
 ## Local accounts and login
 
-The default `RDRS_AUTH_MODE=password` needs no Google setup or email verification. Open `/signup`, choose an email or username and a password of 10–128 characters, then log in at `/login`. Usernames are case-insensitive and can contain letters, numbers, dots, underscores and hyphens (3–64 characters). Email addresses are identifiers only; ownership is not verified.
+The default `RDRS_AUTH_MODE=password` needs no Google setup or email verification. Open `/signup`, choose an email or username and a password of 12–128 characters containing uppercase and lowercase letters, a number and a symbol. Common password patterns, low character variety, and passwords containing your username or email name are rejected. Existing accounts can continue using their current passwords, then log in at `/login`. Usernames are case-insensitive and can contain letters, numbers, dots, underscores and hyphens (3–64 characters). Email addresses are identifiers only; ownership is not verified.
 
 Accounts persist in `accounts.db` beside the application database (inside the runtime volume for Docker). Passwords use salted scrypt hashes. Sessions expire after eight hours, on logout, or on server restart. There is no email delivery or password recovery service. This is a shared demonstration dashboard, not separate monitored storage for each account.
 

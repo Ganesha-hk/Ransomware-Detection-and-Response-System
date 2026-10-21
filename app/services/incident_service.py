@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 from app.core.models import uid, utc
 from app.core.logging import log
 
@@ -56,6 +57,16 @@ class Incidents:
             if result["score"] >= current["peak_score"]:
                 current["peak_score"] = result["score"]
                 current["peak_signals"] = result
+            known = {p["scope"]: p for p in current.get("known_simulator_processes", [])}
+            for directory, process in r.demo_processes.items():
+                if directory in known or str(Path(directory).parent) != root:
+                    continue
+                if any(
+                    Path(e.get("destination_path") or e["source_path"]).is_relative_to(directory)
+                    for e in events
+                ):
+                    known[directory] = process
+            current["known_simulator_processes"] = list(known.values())
             r.store.save("incidents", current)
         if current:
             for event in events:

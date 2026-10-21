@@ -44,6 +44,7 @@ class Runtime:
         self.last_processed = None
         self.process_context = []
         self.live = {}
+        self.demo_processes = {}
         self.evidence_queued = set()
         self.evidence_pending = {}
         self.pending_lock = threading.Lock()

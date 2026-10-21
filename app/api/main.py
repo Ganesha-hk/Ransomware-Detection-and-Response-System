@@ -87,7 +87,19 @@ def create_app(config_path=None, watch=None):
 
                 app.state.demo_last = time.monotonic()
                 try:
-                    return simulate(runtime().config)
+
+                    def register(directory, process):
+                        with runtime().lock:
+                            runtime().demo_processes[directory] = process
+                        runtime().store.save(
+                            "audit_records",
+                            {
+                                "action": "web_simulator_started",
+                                "process": process,
+                            },
+                        )
+
+                    return simulate(runtime().config, register)
                 except (OSError, ValueError) as exc:
                     raise HTTPException(400, "Cannot run demo: " + str(exc)) from exc
             app.state.maintenance = True

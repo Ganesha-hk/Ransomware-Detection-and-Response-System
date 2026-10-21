@@ -455,6 +455,9 @@ async function showIncident() {
     n.append(node("strong", v), node("span", label));
     stats.append(n);
   }
+  for (const process of i.known_simulator_processes || []) {
+    box.append(node("h3", "Known simulator process"), node("p", `${process.name} · PID ${process.pid} · ${process.executable}`), node("p", `Web simulator running inside the RDRS server process. Self-reported for ${process.scope}; not writer attribution for other files.`, "muted"));
+  }
   box.append(stats, node("h3", "Detection reasons"));
   const signals = node("div");
   contributions(signals, i.peak_signals?.contributions, i.peak_signals?.facts);

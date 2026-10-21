@@ -115,7 +115,9 @@ The generated local manifest records the actual simulator PID, parent PID, execu
 ### Browser demo on Render
 
 In **Setup & test**, choose **Run demo simulation**. It creates a fresh sandbox
-folder with fictional content, then changes and renames 50 newly created files.
+folder in each configured demo root (Sandbox, Finance, HR, Customer Data, Legal
+and Backups), then changes and renames 50 newly created files per root. Each
+root can produce its own incident; arbitrary production watch paths are excluded.
 Watch Overview and Incidents for real detector results. Existing files are untouched.
 Signed-in users share this disposable workspace. Runs are limited to one per
 90 seconds and 20 folders per instance.
@@ -130,3 +132,9 @@ Controls are enabled automatically on Render. Set `RDRS_WEB_DEMO=0` to disable,
 or `RDRS_WEB_DEMO=1` to enable explicitly in a disposable local demo. The monitored
 `sandbox` must be writable; the default read-only Docker sandbox cannot run this
 web simulator. Use the host simulation scripts for that Docker configuration.
+
+Demo incidents also show the known simulator's process name, PID and executable,
+with the exact generated directory as its scope. This is self-reported simulator
+metadata saved with the incident and audit log, not inferred writer attribution.
+The web simulator runs inside the application process; its PID is the server's
+PID. Ordinary filesystem events still have unknown writer attribution.

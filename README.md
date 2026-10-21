@@ -105,3 +105,9 @@ Validated on Linux on 21 October 2026 using a separate checkout containing only 
 - Local development suite: 67 tests passed, 95% application coverage; Ruff and JavaScript syntax checks passed. Upstream deprecation warnings remain.
 
 The repository contains runtime source and setup files; local test fixtures and submission material are maintained separately. These checks cover the tested Linux environment, not every operating system or hosting configuration.
+
+### Readable business files and known simulator process
+
+Run `python3 scripts/demo_business_files.py` on the host. This creates fictional invoices, an employee directory, customer records, a text agreement, application logs and a ZIP backup in a new sandbox directory. It edits the log and moves the invoice to `finance/processed`, then runs a safe burst in a **separate new directory**. Readable business files remain intact, verified by SHA-256 after the burst. All names and contact details are fictional.
+
+The generated local manifest records the actual simulator PID, parent PID, executable and script as **self-reported simulator context**. This is not detector attribution. Host PIDs may not appear in container process snapshots. File events appear in the dashboard; the process context is available in the demo manifest, not attributed to incidents by RDRS. No endpoint agent or OS tracing has been added.

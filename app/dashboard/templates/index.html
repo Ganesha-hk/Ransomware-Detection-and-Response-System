@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>RDRS · Security workspace</title>
     <link rel="stylesheet" href="/static/styles.css" />
-    <script src="/static/dashboard.js?v=google-login-1" defer></script>
+    <script src="/static/dashboard.js?v=threat-trend-1" defer></script>
   </head>
   <body>
     <div style="position:fixed;bottom:8px;right:16px;z-index:10;background:#101c28;padding:6px;border-radius:8px"><span id="accountName"></span> <button id="signOut" hidden>Sign out</button></div>
@@ -95,6 +95,11 @@
               <div id="alerts"></div>
             </article>
           </div>
+          <article style="margin-bottom:20px">
+            <h2>Live threat score <small id="threatCurrent">Waiting for measurement</small></h2>
+            <svg id="threatChart" viewBox="0 0 600 145" style="height:180px" role="img" aria-label="Actual threat score over the last five minutes on a fixed zero to one hundred scale"></svg>
+            <p class="muted">Normal activity stays at the baseline. Detection signals raise the score; it returns as activity leaves the detection window. Live samples begin when this page is opened. Gaps indicate missing updates.</p>
+          </article>
           <div class="columns">
             <article>
               <h2>

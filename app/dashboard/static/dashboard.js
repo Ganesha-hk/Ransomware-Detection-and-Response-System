@@ -1,6 +1,7 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 let signedIn = null;
+const threatSamples = [];
 const state = {
   page: "overview",
   selected: null,
@@ -218,6 +219,38 @@ function incidentButton(i) {
   return b;
 }
 function renderOverview(s, alerts, metrics) {
+  const now = Date.now();
+  threatSamples.push({ timestamp: now, score: Number(s.score) });
+  while (threatSamples.length && threatSamples[0].timestamp < now - 300000) threatSamples.shift();
+  const svg = $("threatChart");
+  svg.replaceChildren();
+  const make = (tag, attrs, text) => {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+    if (text !== undefined) el.textContent = text;
+    svg.append(el);
+    return el;
+  };
+  for (const value of [0, 50, 100]) {
+    const y = 112 - value;
+    make("line", {x1: 38, x2: 590, y1: y, y2: y, stroke: "#344657", "stroke-width": 0.5});
+    make("text", {x: 2, y: y + 4, class: "chart-label"}, String(value));
+  }
+  let segment = [];
+  const flush = () => {
+    if (segment.length) make("polyline", {points: segment.join(" ")});
+    segment = [];
+  };
+  threatSamples.forEach((sample, i) => {
+    if (i && sample.timestamp - threatSamples[i - 1].timestamp > 10000) flush();
+    segment.push(`${38 + (sample.timestamp - (now - 300000)) / 300000 * 552},${112 - sample.score}`);
+  });
+  flush();
+  make("circle", {cx: 590, cy: 112 - Number(s.score), r: 3, fill: s.severity === "Critical" ? "#f58b8b" : s.severity === "Warning" ? "#e9c26c" : "#82e2c1"});
+  make("text", {x: 38, y: 138, class: "chart-label"}, "5 minutes ago");
+  make("text", {x: 558, y: 138, class: "chart-label"}, "Now");
+  $("threatCurrent").textContent = `${s.score} / 100 · ${s.severity}`;
+
   $("score").textContent = s.score;
   $("severity").textContent = s.severity;
   $("severity").className = "pill " + s.severity.toLowerCase();

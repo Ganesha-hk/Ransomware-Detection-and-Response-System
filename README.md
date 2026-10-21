@@ -10,10 +10,12 @@ RDRS is a local educational detector for ransomware-like file activity. It monit
 ## Start with Docker
 
 ```bash
+git clone https://github.com/Ganesha-hk/Ransomware-Detection-and-Response-System.git
+cd Ransomware-Detection-and-Response-System
 ./scripts/start.sh
 ```
 
-Open http://127.0.0.1:8000. The launcher creates the sandbox folders and a private `.env` file containing `RDRS_ADMIN_TOKEN`. Enter that token in **Setup & test** to generate reports, run an inventory or change settings. Keep `.env` private.
+Open http://127.0.0.1:8000. The launcher creates the sandbox folders and a private `.env` file, builds the app and waits for it to become healthy. On a fresh installation, create the username **admin** at **Create account**, then log in with your chosen password. This account can change settings and inventory folders. Other accounts can view the shared workspace and generate reports. No Google credentials are needed. Keep `.env` private. If this repository is private, GitHub must grant you access before cloning.
 
 ```bash
 docker compose ps
@@ -28,11 +30,13 @@ Stopping with `down` preserves runtime data. Do not add `-v` unless you intend t
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-export RDRS_ADMIN_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export RDRS_AUTH_MODE=password
+export RDRS_ADMIN_EMAILS=admin
+export RDRS_SESSION_SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
 python -m app.main --config config.yaml
 ```
 
-Use one server at a time on port 8000. Enter the same token in the dashboard for write actions.
+Use one server at a time on port 8000. Create username **admin** at `/signup`, then log in. Native startup creates the configured data directories automatically.
 
 ## Safe demonstration
 
@@ -51,7 +55,7 @@ The burst creates 50 new throwaway files in an exclusive sandbox folder, writes 
 - **Incidents:** detection reasons, observed files, timeline and evidence copies.
 - **File activity:** live events with folder and event-type filters.
 - **Reports:** select local start/end times and readable HTML, JSON or CSV formats. Only selected formats are generated, one per incident opened within the selected range. Event, file and evidence lists are restricted to that range; incident lifecycle and historical peak remain labeled context. The end time is excluded. HTML supports browser printing.
-- **Setup & test:** token entry, inventory, detection settings and simulator instructions.
+- **Setup & test:** inventory, detection settings and simulator instructions. The token field is only for legacy login-free local mode.
 
 API documentation: http://127.0.0.1:8000/docs.
 
@@ -69,7 +73,7 @@ Uses FastAPI, Uvicorn, watchdog, psutil, SQLAlchemy, Pydantic, PyYAML, Loguru an
 
 ## Local accounts and login
 
-The default `RDRS_AUTH_MODE=password` needs no Google setup or email verification. Open `/signup`, choose an email or username and a password of 12–128 characters containing uppercase and lowercase letters, a number and a symbol. Common password patterns, low character variety, and passwords containing your username or email name are rejected. Existing accounts can continue using their current passwords, then log in at `/login`. Usernames are case-insensitive and can contain letters, numbers, dots, underscores and hyphens (3–64 characters). Email addresses are identifiers only; ownership is not verified.
+The default `RDRS_AUTH_MODE=password` needs no Google setup or email verification. Open `/signup`, choose an email or username and a password of 12–128 characters containing uppercase and lowercase letters, a number and a symbol. Common password patterns, low character variety, and passwords containing your username or email name are rejected. Existing accounts can continue using their current passwords. Log in at `/login`. Usernames are case-insensitive and can contain letters, numbers, dots, underscores and hyphens (3–64 characters). Email addresses are identifiers only; ownership is not verified.
 
 Accounts persist in `accounts.db` beside the application database (inside the runtime volume for Docker). Passwords use salted scrypt hashes. Sessions expire after eight hours, on logout, or on server restart. There is no email delivery or password recovery service. This is a shared demonstration dashboard, not separate monitored storage for each account.
 
@@ -80,3 +84,24 @@ Docker reads these settings from `.env`; native execution reads environment vari
 ### Varied synthetic file demonstration
 
 Run `python3 scripts/demo_varied_files.py` while RDRS is monitoring. It creates 24 new files in a uniquely named `data/sandbox/synthetic-varied-*` folder, with approximate entropy levels of 0, 1, 2, 4, 6 and 8 bits/byte and different sizes. Over about 24 seconds, it moves them from `incoming` to `processed`, producing real source and destination paths. Only its newly created files are moved. This is labeled synthetic demo activity, not a real attack, and does not guarantee a Critical alert. The local manifest in `data/demo-manifests` records paths, measured entropy and hashes. Runtime data and account secrets are not part of the repository.
+
+## Troubleshooting startup
+
+- Run commands from the repository directory. Linux is the tested platform; on Windows use WSL2 with Docker integration.
+- Ensure the Docker daemon is running and `docker compose version` succeeds. Your user needs Docker access.
+- If port 8000 is already occupied, stop the other RDRS instance before starting.
+- View startup errors with `docker compose logs --tail=100 rdrs` and health with `docker compose ps`.
+- Register the exact administrator identifier configured in `.env`. Existing `.env` files are preserved by the launcher.
+- A server restart signs users out; account registrations and monitoring history remain in the Docker volume.
+- A fresh installation starts empty. Run the safe demo to populate actual observations.
+
+## Verified setup
+
+Validated on Linux on 21 October 2026 using a separate checkout containing only repository files and new storage:
+
+- Docker launcher build, health check, initially empty incidents/reports, local registration, administrator login and logout.
+- Safe burst detection at 95/Critical and HTML, JSON and CSV report downloads.
+- Fresh Python virtual environment dependency installation, `pip check`, native startup and sign-up route.
+- Local development suite: 67 tests passed, 95% application coverage; Ruff and JavaScript syntax checks passed. Upstream deprecation warnings remain.
+
+The repository contains runtime source and setup files; local test fixtures and submission material are maintained separately. These checks cover the tested Linux environment, not every operating system or hosting configuration.

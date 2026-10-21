@@ -209,6 +209,8 @@ def create_app(config_path=None, watch=None):
     @app.get("/metrics")
     def metrics(limit: int = Query(100, ge=1, le=200)):
         r = runtime()
+        with r.cpu_lock:
+            cpu_samples = list(r.cpu_samples)
         recent = r.store.rows("events", 200)
         top = {}
         for e in recent:
@@ -222,6 +224,7 @@ def create_app(config_path=None, watch=None):
                 )
                 item["observations"] += 1
         return dict(
+            cpu_samples=cpu_samples,
             top_files=sorted(top.values(), key=lambda x: x["observations"], reverse=True)[:10],
             entropy_samples=[
                 {"entropy": e["entropy"], "timestamp": e["timestamp"]}

@@ -1,3 +1,4 @@
+from collections import deque
 import fcntl
 import queue
 import threading
@@ -43,6 +44,8 @@ class Runtime:
         self.errors = []
         self.last_processed = None
         self.process_context = []
+        self.cpu_samples = deque(maxlen=3600)
+        self.cpu_lock = threading.Lock()
         self.live = {}
         self.demo_processes = {}
         self.evidence_queued = set()
@@ -211,6 +214,14 @@ class Runtime:
     def process_loop(self):
         while not self.stopping.is_set():
             rows = self.sampler.sample(time.monotonic())
+            measured = [row["cpu_percent"] for row in rows if row.get("cpu_percent") is not None]
+            with self.cpu_lock:
+                self.cpu_samples.append(
+                    {
+                        "timestamp": utc(),
+                        "cpu_percent": sum(measured) if measured else None,
+                    }
+                )
             for row in rows:
                 self.store.save("processes", row)
             with self.lock:

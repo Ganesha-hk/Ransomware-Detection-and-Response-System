@@ -138,3 +138,11 @@ with the exact generated directory as its scope. This is self-reported simulator
 metadata saved with the incident and audit log, not inferred writer attribution.
 The web simulator runs inside the application process; its PID is the server's
 PID. Ordinary filesystem events still have unknown writer attribution.
+
+The CPU chart uses actual process-sampling batches over the last five minutes,
+independent of per-folder threat scores. Its labelled vertical scale adjusts to
+measured usage (minimum 0–5%). The first sample is unknown; missing samples are
+not replaced with synthetic values. History starts again when monitoring restarts.
+CPU is summed across visible processes and may exceed 100% on multiple cores.
+File simulations primarily exercise filesystem detection and need not produce a
+large CPU spike.

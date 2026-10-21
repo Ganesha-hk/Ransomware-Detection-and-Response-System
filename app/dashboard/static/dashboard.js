@@ -338,10 +338,6 @@ function renderOverview(s, alerts, metrics) {
     },
     "No alert transitions recorded.",
   );
-  const rows = metrics.scores
-    .slice()
-    .reverse()
-    .map((x) => ({ ...x, entropy: x.facts.mean_entropy }));
   const entropy = (metrics.entropy_samples || []).filter(sample => {
     const age = now - Date.parse(sample.timestamp);
     return age >= 0 && age <= 300000;
@@ -369,12 +365,42 @@ function renderOverview(s, alerts, metrics) {
   $("entropyStatus").textContent = entropy.length
     ? `Latest sample: ${number(entropy[entropy.length - 1].entropy)} bits/byte · ${time(entropy[entropy.length - 1].timestamp)}. Each dot is a measured file; gaps mean no samples.`
     : "Idle — no file samples in the last five minutes. Change a sandbox file to see a new measurement.";
-  chart(
-    "cpuChart",
-    rows,
-    "cpu_percent",
-    Math.max(100, ...rows.map((r) => r.cpu_percent || 0)),
-  );
+  const cpu = (metrics.cpu_samples || []).filter(sample => {
+    const age = now - Date.parse(sample.timestamp);
+    return age >= 0 && age <= 300000;
+  });
+  const measured = cpu.filter(sample => Number.isFinite(sample.cpu_percent));
+  const ceiling = Math.max(5, Math.ceil(Math.max(0, ...measured.map(s => s.cpu_percent)) / 5) * 5);
+  const cpuSvg = $("cpuChart");
+  cpuSvg.replaceChildren();
+  const addCpu = (tag, attrs, text) => {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+    if (text !== undefined) el.textContent = text;
+    cpuSvg.append(el);
+  };
+  for (const value of [0, ceiling / 2, ceiling]) {
+    const y = 100 - value / ceiling * 90;
+    addCpu("line", {x1: 50, x2: 590, y1: y, y2: y, stroke: "#344657", "stroke-width": 0.5});
+    addCpu("text", {x: 0, y: y + 4, class: "chart-label"}, `${value}%`);
+  }
+  let previous = null;
+  for (const sample of cpu) {
+    if (!Number.isFinite(sample.cpu_percent)) { previous = null; continue; }
+    const x = 50 + (Date.parse(sample.timestamp) - (now - 300000)) / 300000 * 540;
+    const y = 100 - sample.cpu_percent / ceiling * 90;
+    if (previous && Date.parse(sample.timestamp) - previous.time < 15000)
+      addCpu("line", {x1: previous.x, y1: previous.y, x2: x, y2: y, stroke: "#82e2c1", "stroke-width": 2});
+    addCpu("circle", {cx: x, cy: y, r: 2, fill: "#82e2c1"});
+    previous = {x, y, time: Date.parse(sample.timestamp)};
+  }
+  addCpu("text", {x: 50, y: 130, class: "chart-label"}, "5 minutes ago");
+  addCpu("text", {x: 550, y: 130, class: "chart-label"}, "Now");
+  const lastCpu = measured.at(-1);
+  $("cpuStatus").textContent = lastCpu
+    ? `Latest: ${lastCpu.cpu_percent.toFixed(1)}% · ${time(lastCpu.timestamp)} · Scale: 0–${ceiling}%. Real samples; file activity may use little CPU.`
+    : "Waiting for two process samples to measure CPU usage.";
+
 }
 function renderReports(id, items) {
   list(

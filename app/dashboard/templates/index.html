@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>RDRS · Security workspace</title>
     <link rel="stylesheet" href="/static/styles.css" />
-    <script src="/static/dashboard.js?v=web-demo-2" defer></script>
+    <script src="/static/dashboard.js?v=cpu-samples-1" defer></script>
   </head>
   <body>
     <div style="position:fixed;bottom:8px;right:16px;z-index:10;background:#101c28;padding:6px;border-radius:8px"><span id="accountName"></span> <button id="signOut" hidden>Sign out</button></div>
@@ -120,10 +120,11 @@
               <h2>Visible process CPU <small>summed percentage</small></h2>
               <svg
                 id="cpuChart"
-                viewBox="0 0 600 110"
+                viewBox="0 0 600 140"
                 role="img"
                 aria-label="Visible process CPU over time"
               ></svg>
+              <p id="cpuStatus" class="muted" role="status"></p>
               <p class="muted">
                 Context only. Process snapshots do not identify the file writer.
               </p>

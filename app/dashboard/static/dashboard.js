@@ -54,7 +54,7 @@ async function api(url, options) {
     }
     throw Error(
       response.status === 401
-        ? (signedIn?.mode === "google" ? "Your session has expired. Sign in again at /login." : "Enter your local admin token in Setup & test to perform this action.")
+        ? (signedIn?.mode !== "local" ? "Your session has expired. Sign in again at /login." : "Enter your local admin token in Setup & test to perform this action.")
         : response.status === 409
           ? "The state changed. Refresh and try again."
           : typeof detail === "string"
@@ -654,7 +654,7 @@ $("createSelectedReports").onclick = guarded(async () => {
 
 api("/auth/me").then((account) => {
   signedIn = account;
-  if (account.mode === "google" && account.user) {
+  if (account.mode !== "local" && account.user) {
     $("accountName").textContent = account.user.email;
     $("signOut").hidden = false;
     $("signOut").onclick = guarded(async () => {

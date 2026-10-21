@@ -40,7 +40,7 @@ def create_app(config_path=None, watch=None):
         return app.state.runtime
 
     def authorize(request: Request, authorization: str | None = Header(default=None)):
-        if app.state.auth_mode == "google":
+        if app.state.auth_mode != "local":
             require_session_write(request, admin=request.url.path in ("/settings", "/scan"))
             return
         token = app.state.token

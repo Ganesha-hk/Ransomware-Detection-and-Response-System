@@ -67,18 +67,12 @@ This educational detector does not prevent ransomware, terminate processes, isol
 
 Uses FastAPI, Uvicorn, watchdog, psutil, SQLAlchemy, Pydantic, PyYAML, Loguru and Jinja2. Versions are pinned in `requirements.txt`. Development was assisted by OpenAI Codex. See LICENSE for repository licensing.
 
-## Google login and account creation
+## Local accounts and login
 
-The default mode requires Google login. `/login` and `/signup` both use **Continue with Google**. Google verifies the email; the first successful sign-in creates the local account. No Gmail password or inbox access is requested. This is a shared demonstration workspace, not a separate filesystem per user.
+The default `RDRS_AUTH_MODE=password` needs no Google setup or email verification. Open `/signup`, choose an email or username and a password of 10–128 characters, then log in at `/login`. Usernames are case-insensitive and can contain letters, numbers, dots, underscores and hyphens (3–64 characters). Email addresses are identifiers only; ownership is not verified.
 
-1. In Google Cloud, configure an OAuth consent screen and create an OAuth client of type **Web application**.
-2. Add an authorized redirect URI matching your host exactly: `http://127.0.0.1:8000/auth/callback` locally, or `https://YOUR-SERVICE.onrender.com/auth/callback` on Render.
-3. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RDRS_PUBLIC_URL` (origin only), and `RDRS_SESSION_SECRET` (at least 32 random characters) in the environment or Docker `.env`. Never commit real secrets.
-4. Set `RDRS_ADMIN_EMAILS` to a comma-separated list of verified administrator emails. Others can read the shared sandbox and generate reports; only administrators can inventory folders or edit settings.
-5. Restart. Use **Create an account**, choose your Google account, then enter the dashboard. Use **Sign out** to revoke the session. Sessions last up to eight hours and are invalidated on server restart. Account identities persist beside the application database in `accounts.db`.
+Accounts persist in `accounts.db` beside the application database (inside the runtime volume for Docker). Passwords use salted scrypt hashes. Sessions expire after eight hours, on logout, or on server restart. There is no email delivery or password recovery service. This is a shared demonstration dashboard, not separate monitored storage for each account.
 
-If Google's consent screen is in Testing, add the evaluator's Google account to its test users. A production consent configuration may require Google verification. The external sign-in requires valid Google credentials and has not been end-to-end verified until those credentials are connected.
+Set `RDRS_ADMIN_EMAILS` to comma-separated account identifiers (emails or usernames) allowed to edit monitoring settings and inventory folders. Other accounts can view incidents and generate reports. Register the intended administrator account yourself on the local machine.
 
-For a trusted localhost demonstration without Google, explicitly set `RDRS_AUTH_MODE=local`. Local mode retains the existing administrator token for write actions. Do not expose local mode to the internet. A public `RDRS_PUBLIC_URL` requires HTTPS, Google mode and complete credentials; startup fails if these are missing.
-
-Google setup reference: https://developers.google.com/identity/openid-connect/openid-connect
+Docker reads these settings from `.env`; native execution reads environment variables. Restart after changes. For an internet deployment, set `RDRS_PUBLIC_URL` to the exact HTTPS origin and `RDRS_SESSION_SECRET` to at least 32 random characters. Never commit secrets or account databases. The legacy `local` mode bypasses login and is restricted to trusted localhost demonstrations.

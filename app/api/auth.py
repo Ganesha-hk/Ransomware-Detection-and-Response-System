@@ -1,11 +1,14 @@
 """Google OIDC login with verified identities and revocable server-side sessions."""
 
+import hashlib
+import hmac
+import re
 import os
 import secrets
 import sqlite3
 import time
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 
 from authlib.integrations.starlette_client import OAuth
 from fastapi import HTTPException, Request
@@ -55,9 +58,9 @@ class Accounts:
 
 
 def configure_auth(app, assets):
-    mode = os.getenv("RDRS_AUTH_MODE", "google")
-    if mode not in ("google", "local"):
-        raise ValueError("RDRS_AUTH_MODE must be google or local")
+    mode = os.getenv("RDRS_AUTH_MODE", "password")
+    if mode not in ("password", "google", "local"):
+        raise ValueError("RDRS_AUTH_MODE must be password, google or local")
     origin = os.getenv("RDRS_PUBLIC_URL", "http://127.0.0.1:8000").rstrip("/")
     parsed = urlsplit(origin)
     if (
@@ -71,12 +74,12 @@ def configure_auth(app, assets):
         raise ValueError("RDRS_PUBLIC_URL must be an absolute origin without a path")
     local_origin = parsed.hostname in ("localhost", "127.0.0.1", "testserver", "::1")
     if not local_origin and (mode == "local" or parsed.scheme != "https"):
-        raise ValueError("Public deployments require Google login and HTTPS")
+        raise ValueError("Public deployments require login and HTTPS")
     key = os.getenv("RDRS_SESSION_SECRET", "")
     client_id = os.getenv("GOOGLE_CLIENT_ID", "")
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
     configured = bool(client_id and client_secret and len(key) >= 32)
-    if not local_origin and not configured:
+    if not local_origin and (len(key) < 32 or (mode == "google" and not configured)):
         raise ValueError(
             "Configure Google credentials and a session secret of at least 32 characters"
         )
@@ -108,10 +111,10 @@ def configure_auth(app, assets):
             "/auth/google",
             "/auth/callback",
         ) or path.startswith("/static/")
-        if mode == "google" and not public and not accounts.user(request.session):
+        if mode != "local" and not public and not accounts.user(request.session):
             if path == "/":
                 return RedirectResponse("/login", status_code=303)
-            return JSONResponse({"detail": "Sign in with Google to continue"}, status_code=401)
+            return JSONResponse({"detail": "Sign in to continue"}, status_code=401)
         response = await call_next(request)
         if not path.startswith("/static/"):
             response.headers["Cache-Control"] = "no-store"
@@ -136,12 +139,72 @@ def configure_auth(app, assets):
             return RedirectResponse("/", status_code=303)
         return HTMLResponse(
             env.get_template("login.html").render(
+                password_mode=mode == "password",
+                csrf=request.session.setdefault("form_csrf", secrets.token_urlsafe(32)),
+                error=request.query_params.get("error", ""),
+                created=bool(request.query_params.get("created")),
                 signup=request.url.path == "/signup",
                 configured=configured,
                 local=mode == "local",
                 failed=bool(request.query_params.get("error")),
             )
         )
+
+    attempts = {}
+
+    @app.post("/signup")
+    @app.post("/login")
+    async def password_login(request: Request):
+        if mode != "password":
+            raise HTTPException(404, "Local accounts are disabled")
+        body = await request.body()
+        if len(body) > 4096:
+            raise HTTPException(413, "Form is too large")
+        form = {k: v[0] for k, v in parse_qs(body.decode("utf-8", errors="replace")).items()}
+        csrf = request.session.get("form_csrf", "")
+        if (request.headers.get("origin") != origin or not csrf
+                or not secrets.compare_digest(form.get("csrf", ""), csrf)):
+            raise HTTPException(403, "Refresh the page and try again")
+        now = time.time()
+        for key in list(attempts):
+            if attempts[key][1] < now - 300:
+                del attempts[key]
+        ip = request.client.host if request.client else "unknown"
+        count, started = attempts.get(ip, (0, now))
+        if count >= 20 or len(attempts) > 10000:
+            raise HTTPException(429, "Too many attempts. Try again in five minutes")
+        attempts[ip] = (count + 1, started)
+        identity = form.get("identity", "").strip().lower()
+        password = form.get("password", "")
+        signup = request.url.path == "/signup"
+        error = "Use a username (3–64 letters, numbers, dots, underscores or hyphens) or an email address."
+        valid = re.fullmatch(r"[a-z0-9_.-]{3,64}", identity) or re.fullmatch(r"[^\s@]{1,64}@[^\s@.]+(?:\.[^\s@.]+)+", identity)
+        if valid and len(identity) <= 254 and 10 <= len(password) <= 128:
+            database = Path(app.state.runtime.config.database.path).parent / "accounts.db"
+            with sqlite3.connect(database) as db:
+                db.execute("CREATE TABLE IF NOT EXISTS local_users (identity TEXT PRIMARY KEY, salt BLOB NOT NULL, digest BLOB NOT NULL)")
+                row = db.execute("SELECT salt,digest FROM local_users WHERE identity=?", (identity,)).fetchone()
+                salt = row[0] if row else secrets.token_bytes(16)
+                digest = hashlib.scrypt(password.encode(), salt=salt, n=16384, r=8, p=1)
+                if signup:
+                    try:
+                        db.execute("INSERT INTO local_users VALUES (?,?,?)", (identity, salt, digest))
+                    except sqlite3.IntegrityError:
+                        error = "That email or username is already registered. Please log in."
+                    else:
+                        return RedirectResponse("/login?created=1", status_code=303)
+                elif row and hmac.compare_digest(row[1], digest):
+                    sid = secrets.token_urlsafe(32)
+                    accounts.sessions = {k: v for k, v in accounts.sessions.items() if v["expires"] > now}
+                    accounts.sessions[sid] = dict(email=identity, name=identity, csrf=secrets.token_urlsafe(32), expires=now + 28800)
+                    request.session.clear()
+                    request.session["sid"] = sid
+                    return RedirectResponse("/", status_code=303)
+                else:
+                    error = "Incorrect email/username or password."
+        elif valid:
+            error = "Choose a password between 10 and 128 characters." if signup else "Incorrect email/username or password."
+        return HTMLResponse(env.get_template("login.html").render(signup=signup, password_mode=True, csrf=csrf, error=error), status_code=400)
 
     @app.get("/auth/google")
     async def login_google(request: Request):

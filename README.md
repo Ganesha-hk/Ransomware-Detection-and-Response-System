@@ -76,3 +76,7 @@ Accounts persist in `accounts.db` beside the application database (inside the ru
 Set `RDRS_ADMIN_EMAILS` to comma-separated account identifiers (emails or usernames) allowed to edit monitoring settings and inventory folders. Other accounts can view incidents and generate reports. Register the intended administrator account yourself on the local machine.
 
 Docker reads these settings from `.env`; native execution reads environment variables. Restart after changes. For an internet deployment, set `RDRS_PUBLIC_URL` to the exact HTTPS origin and `RDRS_SESSION_SECRET` to at least 32 random characters. Never commit secrets or account databases. The legacy `local` mode bypasses login and is restricted to trusted localhost demonstrations.
+
+### Varied synthetic file demonstration
+
+Run `python3 scripts/demo_varied_files.py` while RDRS is monitoring. It creates 24 new files in a uniquely named `data/sandbox/synthetic-varied-*` folder, with approximate entropy levels of 0, 1, 2, 4, 6 and 8 bits/byte and different sizes. Over about 24 seconds, it moves them from `incoming` to `processed`, producing real source and destination paths. Only its newly created files are moved. This is labeled synthetic demo activity, not a real attack, and does not guarantee a Critical alert. The local manifest in `data/demo-manifests` records paths, measured entropy and hashes. Runtime data and account secrets are not part of the repository.

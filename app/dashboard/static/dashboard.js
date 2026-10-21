@@ -342,11 +342,33 @@ function renderOverview(s, alerts, metrics) {
     .slice()
     .reverse()
     .map((x) => ({ ...x, entropy: x.facts.mean_entropy }));
-  const entropy = metrics.entropy_samples || [];
-  chart("entropyChart", entropy, "entropy", 8);
+  const entropy = (metrics.entropy_samples || []).filter(sample => {
+    const age = now - Date.parse(sample.timestamp);
+    return age >= 0 && age <= 300000;
+  });
+  const entropySvg = $("entropyChart");
+  entropySvg.replaceChildren();
+  const addEntropy = (tag, attrs, text) => {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+    if (text !== undefined) el.textContent = text;
+    entropySvg.append(el);
+  };
+  for (const value of [0, 4, 8]) {
+    const y = 100 - value / 8 * 90;
+    addEntropy("line", {x1: 30, x2: 590, y1: y, y2: y, stroke: "#344657", "stroke-width": 0.5});
+    addEntropy("text", {x: 2, y: y + 4, class: "chart-label"}, String(value));
+  }
+  // Plot measurements at their actual times; never imply samples during idle gaps.
+  for (const sample of entropy) {
+    const x = 30 + (Date.parse(sample.timestamp) - (now - 300000)) / 300000 * 560;
+    addEntropy("circle", {cx: x, cy: 100 - sample.entropy / 8 * 90, r: 2.5, fill: "#82e2c1"});
+  }
+  addEntropy("text", {x: 30, y: 130, class: "chart-label"}, "5 minutes ago");
+  addEntropy("text", {x: 550, y: 130, class: "chart-label"}, "Now");
   $("entropyStatus").textContent = entropy.length
-    ? `Latest sample: ${number(entropy[entropy.length - 1].entropy)} bits/byte · ${time(entropy[entropy.length - 1].timestamp)}. Showing ${entropy.length} measured observations; updates when files are sampled.`
-    : "Waiting for a readable file change in a monitored folder. No entropy has been measured in the latest 200 events; an idle folder has no new sample.";
+    ? `Latest sample: ${number(entropy[entropy.length - 1].entropy)} bits/byte · ${time(entropy[entropy.length - 1].timestamp)}. Each dot is a measured file; gaps mean no samples.`
+    : "Idle — no file samples in the last five minutes. Change a sandbox file to see a new measurement.";
   chart(
     "cpuChart",
     rows,

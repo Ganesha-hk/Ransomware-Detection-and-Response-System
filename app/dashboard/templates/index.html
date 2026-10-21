@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>RDRS · Security workspace</title>
     <link rel="stylesheet" href="/static/styles.css" />
-    <script src="/static/dashboard.js?v=entropy-samples-1" defer></script>
+    <script src="/static/dashboard.js?v=entropy-time-2" defer></script>
   </head>
   <body>
     <div style="position:fixed;bottom:8px;right:16px;z-index:10;background:#101c28;padding:6px;border-radius:8px"><span id="accountName"></span> <button id="signOut" hidden>Sign out</button></div>
@@ -103,11 +103,11 @@
           <div class="columns">
             <article>
               <h2>
-                File entropy <small>bits per byte · latest observations</small>
+                File entropy <small>bits per byte · last five minutes</small>
               </h2>
               <svg
                 id="entropyChart"
-                viewBox="0 0 600 110"
+                viewBox="0 0 600 140"
                 role="img"
                 aria-label="Observed file entropy over time"
               ></svg>

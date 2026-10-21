@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ 'Create account' if signup else 'Sign in' }} · RDRS</title><link rel="stylesheet" href="/static/login.css"></head>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ 'Create account' if signup else 'Sign in' }} · RDRS</title><link rel="stylesheet" href="/static/login.css?v=local-form-2"></head>
 <body><main><section class="intro"><a class="brand" href="/login"><b>R</b> RDRS</a><p class="eyebrow">SECURITY WORKSPACE</p><h1>Understand the activity.<br>Investigate the evidence.</h1><p>Monitor file changes, review detection signals, and create clear incident reports in one workspace.</p><div class="feature">01 &nbsp; Live file monitoring</div><div class="feature">02 &nbsp; Explainable detection</div><div class="feature">03 &nbsp; Evidence and reports</div><small>Educational demonstration · Copy-only response</small></section>
 <section class="form"><div><p class="eyebrow">{{ 'GET STARTED' if signup else 'WELCOME BACK' }}</p><h2>{{ 'Create your account' if signup else 'Sign in to RDRS' }}</h2><p>{{ 'Choose an email or username and a password. Your account is saved on this RDRS server.' if signup else 'Enter your email or username and password to open the dashboard.' }}</p>
 {% if password_mode %}
@@ -6,12 +6,12 @@
 {% if created %}<p role="status" class="notice">Account created. Log in with your new credentials.</p>{% endif %}
 <form method="post" action="{{ '/signup' if signup else '/login' }}">
 <input type="hidden" name="csrf" value="{{ csrf }}">
-<label for="identity">Email or username</label><input id="identity" name="identity" type="text" autocomplete="username" maxlength="254" required autofocus>
-<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="{{ 'new-password' if signup else 'current-password' }}" minlength="10" maxlength="128" required>
+<label for="identity">Email or username</label><input id="identity" name="identity" type="text" placeholder="Enter your email or username" autocomplete="username" maxlength="254" required autofocus>
+<label for="password">Password</label><input id="password" name="password" type="password" placeholder="{{ 'Create a password' if signup else 'Enter your password' }}" autocomplete="{{ 'new-password' if signup else 'current-password' }}" minlength="10" maxlength="128" required>
 {% if signup %}<p class="privacy">Use at least 10 characters. Email verification is not required. Choose a password for RDRS.</p>{% endif %}
 <button class="google" type="submit">{{ 'Create account' if signup else 'Log in' }}</button></form>
 {% else %}<a class="google" href="/auth/google">Continue with Google</a>{% endif %}
 <p class="scope">This is a shared demonstration workspace. Signed-in users can view its sandbox incidents and generate reports. Monitoring settings are restricted to the administrator.</p>
-<p>{{ 'Already have an account?' if signup else 'New to RDRS?' }} <a href="{{ '/login' if signup else '/signup' }}">{{ 'Sign in' if signup else 'Create an account' }}</a></p>
+<p>{{ 'Already have an account?' if signup else 'New to RDRS?' }} <a href="{{ '/login' if signup else '/signup' }}">{{ 'Login' if signup else 'Create an account' }}</a></p>
 {% if local %}<a class="local" href="/">Open local workspace</a>{% endif %}
 </div><footer>Ransomware Detection and Response System<br>Project by Ganesha hk</footer></section></main></body></html>

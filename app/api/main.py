@@ -1,5 +1,8 @@
 import os
 import secrets
+import threading
+import time
+import sqlite3
 from datetime import datetime
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -28,12 +31,25 @@ def create_app(config_path=None, watch=None):
         try:
             yield
         finally:
-            await run_in_threadpool(runtime.stop)
+            await run_in_threadpool(app.state.runtime.stop)
 
     app = FastAPI(title="RDRS educational detector", lifespan=lifespan)
+    app.state.demo_lock = threading.Lock()
+    app.state.demo_last = 0.0
+    app.state.maintenance = False
+
+    @app.middleware("http")
+    async def maintenance(request, call_next):
+        if app.state.maintenance:
+            return JSONResponse(
+                {"detail": "Clearing demo history. Retry shortly."}, status_code=503
+            )
+        return await call_next(request)
+
     hostname = configure_auth(app, ASSETS)
     app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "testserver", "[::1]", hostname]
+        TrustedHostMiddleware,
+        allowed_hosts=["localhost", "127.0.0.1", "testserver", "[::1]", hostname],
     )
     app.mount("/static", StaticFiles(directory=ASSETS / "static"), name="static")
 
@@ -47,6 +63,64 @@ def create_app(config_path=None, watch=None):
         token = app.state.token
         if not token or not secrets.compare_digest(authorization or "", "Bearer " + token):
             raise HTTPException(401, "A local admin token is required")
+
+    def demo_enabled():
+        return os.getenv("RDRS_WEB_DEMO", "1" if os.getenv("RENDER") else "0") == "1"
+
+    @app.get("/demo/status")
+    def demo_status():
+        return {"enabled": demo_enabled()}
+
+    @app.post("/demo/{action}", dependencies=[Depends(authorize)])
+    def demo_action(action: str):
+        if not demo_enabled() or not runtime().config.app.simulation_mode:
+            raise HTTPException(403, "Enable RDRS_WEB_DEMO=1 only for a disposable demo workspace")
+        if action not in ("run", "clear"):
+            raise HTTPException(404, "Unknown demo action")
+        if not app.state.demo_lock.acquire(blocking=False):
+            raise HTTPException(409, "A demo operation is already running")
+        try:
+            if action == "run":
+                if time.monotonic() - app.state.demo_last < 90:
+                    raise HTTPException(429, "Wait 90 seconds between simulations")
+                from app.services.web_demo import simulate
+
+                app.state.demo_last = time.monotonic()
+                try:
+                    return simulate(runtime().config)
+                except (OSError, ValueError) as exc:
+                    raise HTTPException(400, "Cannot run demo: " + str(exc)) from exc
+            app.state.maintenance = True
+            old = runtime()
+            old.stop()
+            if any(t.is_alive() for t in old.threads) or (
+                old.scan_thread and old.scan_thread.is_alive()
+            ):
+                raise HTTPException(503, "Workers are still stopping; restart the service")
+            with sqlite3.connect(old.config.database.path) as db:
+                db.execute("PRAGMA foreign_keys=ON")
+                for table in (
+                    "incident_events",
+                    "evidence_files",
+                    "reports",
+                    "alerts",
+                    "scores",
+                    "processes",
+                    "scan_jobs",
+                    "incidents",
+                    "events",
+                ):
+                    db.execute(f"DELETE FROM {table}")
+            new = Runtime(config_path or os.getenv("RDRS_CONFIG", "config.yaml"), watch)
+            app.state.runtime = new
+            new.start()
+            new.store.save("audit_records", {"action": "web_demo_history_cleared"})
+            return {
+                "message": "Demo history cleared. Accounts, settings and files on disk preserved."
+            }
+        finally:
+            app.state.maintenance = False
+            app.state.demo_lock.release()
 
     def found(kind, id):
         row = runtime().store.get(kind, id)
@@ -168,9 +242,14 @@ def create_app(config_path=None, watch=None):
             return {"reports": [], "message": "No incidents opened in this period."}
         if len(matches) > 100:
             raise HTTPException(422, "Choose a shorter period (maximum 100 incidents).")
-        return {"reports": [r.reports.generate(i, f, body.start, body.end)
-                            for i in matches for f in body.formats],
-                "message": "Generated only the selected formats, one report per matching incident."}
+        return {
+            "reports": [
+                r.reports.generate(i, f, body.start, body.end)
+                for i in matches
+                for f in body.formats
+            ],
+            "message": "Generated only the selected formats, one report per matching incident.",
+        }
 
     @app.get("/reports/{id}/download")
     def download(id: str):
@@ -182,7 +261,9 @@ def create_app(config_path=None, watch=None):
         return FileResponse(
             path,
             filename=path.name,
-            media_type={"json": "application/json", "csv": "text/csv", "html": "text/html"}[row["format"]],
+            media_type={"json": "application/json", "csv": "text/csv", "html": "text/html"}[
+                row["format"]
+            ],
         )
 
     @app.get("/reports/{id}/view")
@@ -190,12 +271,21 @@ def create_app(config_path=None, watch=None):
         row = found("reports", id)
         base = Path(runtime().config.reports.output_dir).resolve()
         path = base / row["path"]
-        if row["format"] != "html" or not path.resolve().is_relative_to(base) or not path.is_file() or path.is_symlink():
+        if (
+            row["format"] != "html"
+            or not path.resolve().is_relative_to(base)
+            or not path.is_file()
+            or path.is_symlink()
+        ):
             raise HTTPException(404, "Assessment report unavailable")
-        return FileResponse(path, media_type="text/html", headers={
-            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
-            "X-Content-Type-Options": "nosniff",
-        })
+        return FileResponse(
+            path,
+            media_type="text/html",
+            headers={
+                "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
 
     @app.post("/scan", status_code=202, dependencies=[Depends(authorize)])
     def start_scan(body: ScanRequest):

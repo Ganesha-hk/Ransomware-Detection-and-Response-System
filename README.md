@@ -111,3 +111,22 @@ The repository contains runtime source and setup files; local test fixtures and 
 Run `python3 scripts/demo_business_files.py` on the host. This creates fictional invoices, an employee directory, customer records, a text agreement, application logs and a ZIP backup in a new sandbox directory. It edits the log and moves the invoice to `finance/processed`, then runs a safe burst in a **separate new directory**. Readable business files remain intact, verified by SHA-256 after the burst. All names and contact details are fictional.
 
 The generated local manifest records the actual simulator PID, parent PID, executable and script as **self-reported simulator context**. This is not detector attribution. Host PIDs may not appear in container process snapshots. File events appear in the dashboard; the process context is available in the demo manifest, not attributed to incidents by RDRS. No endpoint agent or OS tracing has been added.
+
+### Browser demo on Render
+
+In **Setup & test**, choose **Run demo simulation**. It creates a fresh sandbox
+folder with fictional content, then changes and renames 50 newly created files.
+Watch Overview and Incidents for real detector results. Existing files are untouched.
+Signed-in users share this disposable workspace. Runs are limited to one per
+90 seconds and 20 folders per instance.
+
+**Clear demo history** asks for confirmation, stops monitoring, clears activity,
+incidents and report listings, then restarts monitoring. Accounts, configuration,
+audit records and all files on disk (including evidence) remain intact. It does
+not clear browser cache or reclaim disk space. Render's disposable filesystem
+may reset on redeployment.
+
+Controls are enabled automatically on Render. Set `RDRS_WEB_DEMO=0` to disable,
+or `RDRS_WEB_DEMO=1` to enable explicitly in a disposable local demo. The monitored
+`sandbox` must be writable; the default read-only Docker sandbox cannot run this
+web simulator. Use the host simulation scripts for that Docker configuration.

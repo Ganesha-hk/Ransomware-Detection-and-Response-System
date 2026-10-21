@@ -731,3 +731,18 @@ api("/auth/me").then((account) => {
     });
   }
 }).catch(() => {});
+
+async function webDemoAction(action) {
+  if (action === "clear" && !confirm("Clear shared activity, incidents and report listings? Accounts, settings and files on disk will be kept.")) return;
+  $("runWebDemo").disabled = $("clearWebDemo").disabled = true;
+  $("webDemoMessage").textContent = action === "run" ? "Running safe simulation…" : "Clearing history…";
+  try {
+    const result = await mutate("/demo/" + action, {});
+    $("webDemoMessage").textContent = result.message;
+    if (action === "clear") location.reload();
+  } catch (error) { $("webDemoMessage").textContent = error.message; }
+  finally { $("runWebDemo").disabled = $("clearWebDemo").disabled = false; }
+}
+$("runWebDemo").onclick = () => webDemoAction("run");
+$("clearWebDemo").onclick = () => webDemoAction("clear");
+api("/demo/status").then(result => { $("webDemo").hidden = !result.enabled; }).catch(() => {});
